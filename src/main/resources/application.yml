@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: photo-explorer
+    file:
+      upload:
+        path: /tmp/uploads
