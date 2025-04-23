@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>photo-explorer</title>
+    <style>
+        body {
+            margin-left: auto;
+            margin-right: auto;
+            width: 50%;
+        }
+        .center-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <div id="app">
+        <h3>{{ message }}</h3>
+        <hr/>
+        <p v-if="e" style="color: red;border: 1px solid red; padding: 5px;">{{e}}</p>
+        
+        <div class="center-container">
+            <form @submit.prevent="uploadFiles" enctype="multipart/form-data">
+                <input type="file" id="file" name="file" accept="image/*" multiple @change="onFileChange">
+                <button type="submit" id="upload" :disabled="!filesSelected">Upload</button>
+            </form>
+        </div>
+        <hr/>
+        
+        <div style="display: flex; gap: 5px; align-items: center; justify-content: space-around;">
+            <div v-for="(photo, index) in photos" :key="index" style="border: 1px solid gray; padding: 5px; border-radius: 5px;">
+                <img :src="photo.src" :alt="photo.alt" style="width: 150px;height: 150px;"/>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const { createApp, ref, onMounted, watch } = Vue
+    
+        const apiURL = 'http://localhost:8080'
+
+        createApp({
+          setup() {
+            const message = ref('photo-explorer')
+            const photos = ref([])
+            const e = ref(null)
+            const filesSelected = ref(false)
+            const selectedFiles = ref(null)
+
+            const onFileChange = (event) => {
+                selectedFiles.value = event.target.files
+                filesSelected.value = selectedFiles.value.length > 0
+            }
+
+            const uploadFiles = () => {
+                if (!selectedFiles.value) return
+
+                const formData = new FormData()
+                Array.from(selectedFiles.value).forEach(file => {
+                    formData.append('file', file)
+                })
+
+                fetch(`${apiURL}/file/upload`, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to upload files')
+                    }
+                    return response.json()
+                })
+                .then(data => {
+                    filesSelected.value = false
+                    selectedFiles.value = null
+                    document.getElementById('file').value = ''
+                    fetchAll()
+                    
+                })
+                .catch(error => e.value = error)
+            }
+
+            const fetchAll = () => {
+                return fetch(`${apiURL}/file/explorer`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok')
+                        }
+                        return response.json()
+                    })
+                    .then(data => {
+                        photos.value = data.slice(0, 10).map(photo => ({
+                            src: `${apiURL}/file/view/${photo.thumbnailFileName}`,
+                            alt: photo.fileName
+                        }))
+                    })
+                    .catch(error => e.value = error)
+            }
+
+            watch(
+                () => e.value,
+                (newValue) => {
+                    if (newValue) {
+                        setTimeout(() => {
+                            e.value = null
+                        }, 3000)
+                    }
+                }
+            )
+
+            onMounted(() => {
+                fetchAll()
+            })
+
+            return {
+              message, photos, e, filesSelected, onFileChange, uploadFiles
+            }
+          }
+        }).mount('#app')
+      </script>
+</body>
+</html>
