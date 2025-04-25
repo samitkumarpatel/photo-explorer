@@ -80,7 +80,6 @@
                     selectedFiles.value = null
                     document.getElementById('file').value = ''
                     fetchAll()
-                    
                 })
                 .catch(error => e.value = error)
             }
@@ -95,7 +94,8 @@
                     })
                     .then(data => {
                         photos.value = data.slice(0, 10).map(photo => ({
-                            src: `${apiURL}/file/view/${photo.thumbnailFileName}`,
+                            //src: `${apiURL}/file/view/${photo.thumbnailFileName}`,
+                            src: `${apiURL}/file/view/${photo.fileName}`,
                             alt: photo.fileName
                         }))
                     })
