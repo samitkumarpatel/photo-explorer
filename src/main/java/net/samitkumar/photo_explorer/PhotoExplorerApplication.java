@@ -125,7 +125,7 @@ public class PhotoExplorerApplication {
 	private Mono<ServerResponse> fileExplorer(ServerRequest request) {
 		//list all the files in the directory
 		return Mono.fromCallable(
-					() -> Files.walk(Paths.get(fileUploadBasePath), 10)
+					() -> Files.walk(Paths.get(fileUploadBasePath), 1)
 					.filter(Files::isRegularFile)
 					.filter(file -> !file.getFileName().toString().contains(".thumbnail"))
 					.map(Path::toFile)
@@ -138,9 +138,11 @@ public class PhotoExplorerApplication {
 
 	private Mono<ServerResponse> uploadFile(ServerRequest request) {
 		return request
-				.multipartData()
+				/*.multipartData()
 				.map(MultiValueMap::toSingleValueMap)
-				.map(stringPartMap -> stringPartMap.get("file"))
+				.map(stringPartMap -> stringPartMap.get("file"))*/
+				.multipartData()
+				.flatMapMany(multipart -> Flux.fromIterable(multipart.get("file")))
 				.cast(FilePart.class)
 				//validate and accept only file with content type image/*
 				.doOnNext(filePart -> {

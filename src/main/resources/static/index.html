@@ -15,27 +15,91 @@
             justify-content: center;
             margin-top: 20px;
         }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .photo-card {
+            border: 1px solid gray;
+            padding: 5px;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .photo-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .photo-actions i {
+            cursor: pointer;
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <div id="app">
         <h3>{{ message }}</h3>
         <hr/>
         <p v-if="e" style="color: red;border: 1px solid red; padding: 5px;">{{e}}</p>
         
-        <div class="center-container">
+        <div>
             <form @submit.prevent="uploadFiles" enctype="multipart/form-data">
                 <input type="file" id="file" name="file" accept="image/*" multiple @change="onFileChange">
-                <button type="submit" id="upload" :disabled="!filesSelected">Upload</button>
+                <br/>
+                <button type="submit" id="upload" :disabled="!filesSelected" style="margin-top: 10px;">Upload</button>
             </form>
         </div>
         <hr/>
         
-        <div style="display: flex; gap: 5px; align-items: center; justify-content: space-around;">
-            <div v-for="(photo, index) in photos" :key="index" style="border: 1px solid gray; padding: 5px; border-radius: 5px;">
-                <img :src="photo.src" :alt="photo.alt" style="width: 150px;height: 150px;"/>
+        <div style="display: flex; gap: 10px; align-items: center; justify-content: center;flex-wrap: wrap;">
+            <div v-for="(photo, index) in photos" :key="index" class="photo-card">
+                <img :src="photo.src" :alt="photo.alt" style="width: 150px;height: 150px; cursor: pointer;" @click="openModal(photo.src)"/>
+                <div class="photo-actions">
+                    <i class="fas fa-comment" @click="commentPhoto(photo)">c</i>
+                    <i class="fas fa-thumbs-up" @click="likePhoto(photo)">t</i>
+                    <i class="fas fa-share" @click="sharePhoto(photo)">s</i>
+                </div>
             </div>
+        </div>
+        <div class="modal" :class="{ show: isModalOpen }">
+            <button class="close-btn" @click="closeModal">&times;</button>
+            <img :src="modalImage" alt="Full-size image">
         </div>
     </div>
     
@@ -51,6 +115,8 @@
             const e = ref(null)
             const filesSelected = ref(false)
             const selectedFiles = ref(null)
+            const isModalOpen = ref(false)
+            const modalImage = ref(null)
 
             const onFileChange = (event) => {
                 selectedFiles.value = event.target.files
@@ -94,12 +160,33 @@
                     })
                     .then(data => {
                         photos.value = data.slice(0, 10).map(photo => ({
-                            //src: `${apiURL}/file/view/${photo.thumbnailFileName}`,
                             src: `${apiURL}/file/view/${photo.fileName}`,
                             alt: photo.fileName
                         }))
                     })
                     .catch(error => e.value = error)
+            }
+
+            const openModal = (src) => {
+                modalImage.value = src
+                isModalOpen.value = true
+            }
+
+            const closeModal = () => {
+                isModalOpen.value = false
+                modalImage.value = null
+            }
+
+            const commentPhoto = (photo) => {
+                console.log(`Comment on photo: ${photo.src}`)
+            }
+
+            const likePhoto = (photo) => {
+                console.log(`Like photo: ${photo.src}`)
+            }
+
+            const sharePhoto = (photo) => {
+                console.log(`Share photo: ${photo.src}`)
             }
 
             watch(
@@ -118,7 +205,7 @@
             })
 
             return {
-              message, photos, e, filesSelected, onFileChange, uploadFiles
+              message, photos, e, filesSelected, onFileChange, uploadFiles, isModalOpen, modalImage, openModal, closeModal, commentPhoto, likePhoto, sharePhoto
             }
           }
         }).mount('#app')
